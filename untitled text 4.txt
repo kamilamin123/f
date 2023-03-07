@@ -1,0 +1,455 @@
+DROP TABLE IF EXISTS "User";
+
+CREATE TABLE "User"
+("userId" integer NOT NULL GENERATED ALWAYS AS IDENTITY, 
+ "firstName" character varying NOT NULL, 
+ "lastName" character varying NOT NULL, 
+ "username" character varying NOT NULL, 
+ "phone" character varying NOT NULL,
+ "emailId" character varying NOT NULL, 
+ "password" character varying NOT NULL, 
+ "emailVerified" boolean NOT NULL, 
+ "createdOn" timestamp without time zone NOT NULL,
+ CONSTRAINT "User_pkey" PRIMARY KEY ("userId"),
+ CONSTRAINT "User_emailId_key" UNIQUE("emailId"),
+ CONSTRAINT "User_username_key" UNIQUE ("username")
+);
+
+
+INSERT INTO "User"
+("userId", "firstName", "lastName","username", "phone", "emailId", "password", "emailVerified", "createdOn")
+VALUES
+(default, 'John', 'Doe', 'johndoe', '+1-555-1234', 'johndoe@example.com','password123',True, CURRENT_TIMESTAMP);
+
+INSERT INTO "User"
+("userId", "firstName", "lastName","username", "phone", "emailId", "password", "emailVerified", "createdOn")
+VALUES
+(default,'Amy', 'Lee', 'amylee', '+1-555-9012', 'amylee@example.com', 'password789', true, NOW()),
+(default, 'Tom', 'Jones', 'tomjones', '+1-555-3456', 'tomjones@example.com', 'passwordabc', false, NOW());
+
+
+SELECT * FROM "User";
+
+
+
+SELECT * FROM "User"
+WHERE "emailVerified" = true;
+
+
+SELECT * FROM "User"
+WHERE "userId" = 1;
+
+
+SELECT * FROM "User"
+WHERE "emailId" = 'johndoe@example.com';
+
+
+
+DROP TABLE IF EXISTS "Country";
+CREATE TABLE "Country" (
+	"countryId" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
+	"countryCode" VARCHAR NOT NULL,
+	CONSTRAINT "Country_pkey" PRIMARY KEY ("countryId")
+);  
+
+--Insert a new row into the "Country" table with a "countryCode" of 'CA'.
+INSERT INTO "Country" ("countryCode") VALUES ('CA');
+
+--Insert two new rows into the "Country" table with "countryCode" values of 'DE' and 'IT'.
+INSERT INTO "Country" ("countryCode") VALUES ('DE'), ('IT');
+
+--Select all rows from the "Country" table.
+SELECT * FROM "Country";
+
+--Select the "countryCode" value for the row with "countryId" equal to 3.
+SELECT "countryCode" FROM "Country" WHERE "countryId" = 3;
+
+--Update the "countryCode" value to 'UK' for the row with "countryId" equal to 1.
+UPDATE "Country" SET "countryCode" = 'UK' WHERE "countryId" = 1;
+
+--Update the "countryCode" value to 'FR' for the row with "countryId" equal to 2.
+UPDATE "Country" SET "countryCode" = 'FR' WHERE "countryId" = 2;
+
+--Delete the row from the "Country" table with "countryId" equal to 3.
+DELETE FROM "Country" WHERE "countryId" = 3;
+
+
+
+DROP TABLE IF EXISTS "City";
+CREATE TABLE "City"(
+	"cityId" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
+    "name" VARCHAR NOT NULL,
+    "timezone" VARCHAR NOT NULL,
+	"longitude" NUMERIC NOT NULL,
+	"latitude" NUMERIC NOT NULL,
+    "weatherCityId" INTEGER NOT NULL,
+    "countryId" INTEGER NOT NULL,
+   CONSTRAINT "City_pkey" PRIMARY KEY ("cityId"),
+   CONSTRAINT "City_countryId_fkey" FOREIGN KEY("countryId")
+      REFERENCES "Country"("countryId")
+);
+
+--insert a new city record into the table
+INSERT INTO "City" ("cityId", "name", "timezone", "longitude", "latitude", "weatherCityId", "countryId")
+VALUES (default, 'London', 'GMT', -0.1278, 51.5074, 12345, 1);
+
+SELECT * FROM "City";
+
+--Select all records for the city with a "cityId" of 1.
+SELECT * FROM "City"
+WHERE "cityId" = 1;
+
+--Update the "timezone" for the city with a "cityId" of 1 to "BST"
+UPDATE "City" SET "timezone" = 'BST' WHERE "cityId" = 1;
+
+--Insert a new city into the table with the following values:
+
+INSERT INTO "City" ("cityId", "name", "timezone", "longtitude", "latitude", weatherCityId, countryId)
+VALUES (default, 'Paris', 'CET', '2.3522', '48.8566', 54321, 2);
+
+--Select all cities with a countryId of 2.
+
+SELECT * FROM "City"
+WHERE "countryId" is 2;
+
+--Update the timezone for all cities in the table to "UTC".
+UPDATE "City" SET "timezone" = 'UTC' WHERE * "City"; 
+
+
+
+
+
+DROP TABLE IF EXISTS "Weather";
+CREATE TABLE "Weather" (
+	"weatherId" integer NOT NULL GENERATED ALWAYS AS IDENTITY,
+	"cityId" integer NOT NULL,
+	"userId" integer NOT NULL,
+	"weatherStatusId" integer NOT NULL,
+	"description" varchar NOT NULL,
+	"icon" varchar NOT NULL,
+	"sunrise" timestamp without time zone NOT NULL,
+	"sunset" timestamp without time zone NOT NULL,
+	"temp" numeric NOT NULL,
+	"feelsLike" numeric NOT NULL,
+	"tempMin" numeric NOT NULL,
+	"tempMax" numeric NOT NULL,
+	"pressure" numeric NOT NULL,
+	"humidity" numeric NOT NULL,
+	"visibility" numeric NOT NULL,
+	"windSpeed" numeric NOT NULL,
+	"windDirection" numeric NOT NULL,
+	"cloudsAll" numeric NOT NULL,
+	"updatedOn" timestamp without time zone NOT NULL,
+	CONSTRAINT "Weather_pkey" PRIMARY KEY ("weatherId"),
+	CONSTRAINT "Weather_cityId_fkey" FOREIGN KEY ("cityId")
+		REFERENCES "City" ("cityId"),
+	CONSTRAINT "Weather_userId_fkey" FOREIGN KEY ("userId")
+		REFERENCES "User" ("userId")
+);
+
+
+
+INSERT INTO "Weather" ("weatherId","cityId", "userId","weatherStatusId","description", "icon",
+"sunrise","sunset","temp","feelsLike","tempMin", "tempMax","pressure","humidity",
+"visibility","windSpeed","windDirection", "cloudsAll","updatedOn" )
+VALUES 
+(default,1,2,3, 'Cloudy with a chance of rain','01n','2023-02-22 06:30:00', 
+'2023-02-22 18:30:00', 12.5, 10.5, 9.5, 15.5, 1015, 75, 8000, 5.5, 180,  80,
+  '2023-02-22 12:30:00')
+
+SELECT * FROM "Weather" 
+WHERE "cityId"= 1;
+
+UPDATE "Weather" SET "temp" =15.0
+WHERE "weatherId" =1;
+
+INSERT INTO "Weather" ("weatherId","cityId", "userId","weatherStatusId","description", "icon",
+"sunrise","sunset","temp","feelsLike","tempMin", "tempMax","pressure","humidity",
+"visibility","windSpeed","windDirection", "cloudsAll","updatedOn" )
+VALUES 
+(default, 2, 2, 200,'scattered clouds','03d', '2023-02-23 06:39:53','2023-02-23 17:50:39', 
+19.2, 18.3, 18.5, 20.8, 1010.0, 74.0, 10000, 3.0, 170.0, 40.0, '2023-02-23 13:45:00');
+
+SELECT * FROM "Weather";
+
+
+
+
+--insert 5 new records into User table
+
+INSERT INTO "User"
+("userId", "firstName", "lastName","username", "phone", "emailId", "password", "emailVerified", "createdOn")
+VALUES
+(default,'John', 'Doe1', 'johndoe1', '1234567890', 'johndoe1@example.com', 'password1', true, now()),
+(default,'Jane', 'Doe', 'janedoe', '2345678901', 'janedoe@example.com', 'password2', true, now()),
+(default,'Bob', 'Smith', 'bobsmith', '3456789012', 'bobsmith@example.com', 'password3', true, now()),
+(default,'Alice', 'Johnson', 'alicejohnson', '4567890123', 'alicejohnson@example.com', 'password4', true, now()),
+(default,'Mike', 'Brown', 'mikebrown', '5678901234', 'mikebrown@example.com', 'password5', true, now());
+
+--select all users whose first name starts with the letter 'J'.
+
+SELECT * FROM "User"
+WHERE "firstName" LIKE 'J%';
+
+--select all users whose createdOn date is between '2022-01-01' and '2022-12-31'.
+SELECT * FROM "User"
+WHERE "createdOn" BETWEEN '2022-01-01' AND '2022-12-31';
+
+--maximum and minimum values of the "userId" column in the "User" table.
+SELECT MIN("userId") AS min_userId ,MAX("userId") AS max_userId  FROM "User"; 
+
+-- count the number of users in the table whose email addresses end with '@gmail.com'.
+SELECT COUNT(*) FROM "User" WHERE "emailId" LIKE '%@gmail.com';
+
+
+
+
+-- retrieve all distinct phone numbers from the "User" table.
+
+SELECT DISTINCT("phone") FROM "User";
+
+
+
+
+
+
+
+
+
+
+
+-- retrieve all users from the User table in ascending order based on their last names.
+ SELECT "lastName" 
+FROM "User"
+ORDER BY "lastName" ASC;
+
+-- retrieve all users from the User table in descending order based on their first names.
+ SELECT "firstName" FROM "User"
+  ORDER BY "firstName" DESC;
+
+--retrieve the top 5 users from the User table with the latest "createdOn" dates, sorted in descending order.
+ SELECT * FROM "User"
+ORDER BY "createdOn" DESC
+LIMIT 5;
+
+--retrieve all users from the User table whose last names start with the letter "S", 
+--sorted in descending order based on their "createdOn" date.
+ SELECT * FROM "User" WHERE "lastName" LIKE 'S%'
+ORDER BY "createdOn" DESC;
+
+--retrieve all users from the User table whose password length is greater than 8 characters, 
+--sorted in ascending order based on their "createdOn" date.
+
+SELECT * FROM "User" 
+WHERE LENGTH("password") > 8
+ORDER BY "createdOn" ASC;
+
+
+
+
+
+
+--Retrieve the names of all cities and their corresponding weather descriptions based on "cityId"
+SELECT "c"."name", "w"."description"
+FROM "City" AS "c"
+INNER JOIN "Weather" AS "w"
+ON "c"."cityId" = "w"."cityId";
+
+--Retrieve the names of all cities and their corresponding temperatures based on "cityId"
+SELECT c."name", w."temp"
+FROM "City" AS c
+INNER JOIN "Weather" AS w 
+ON c."cityId"= w."cityId";
+
+--Retrieve the names and timezones of all cities where the humidity is greater than 50%.
+SELECT "c"."name", "c"."timezone" FROM "City" AS "c"
+JOIN "Weather" AS "w"
+ON "c"."cityId" = "w"."cityId"
+WHERE "w"."humidity" > 50;
+
+--Retrieve the names and sunrise times of all cities where the temp is less than 20.
+SELECT c."name", w."sunrise"
+FROM "City" AS c 
+INNER JOIN "Weather" AS w 
+ON c."cityId"= w."cityId"
+WHERE w."temp" < 20;
+
+--Retrieve the names and maximum temperatures of all cities where the wind speed is less than 10.
+SELECT "City"."name" ,"Weather"."tempMax" FROM "Weather"
+INNER JOIN "City" ON "City"."cityId" = "Weather"."cityId"
+WHERE "Weather"."windSpeed" <10;
+
+
+
+
+
+
+--create the procedure
+
+CREATE OR REPLACE PROCEDURE insertUser(
+_firstName VARCHAR,
+_lastName VARCHAR,
+_username VARCHAR,
+_phone  VARCHAR,
+_emailId VARCHAR,
+_password VARCHAR,
+_emailVerified BOOLEAN,
+_createdOn TIMESTAMP WITHOUT TIME ZONE
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+INSERT INTO "User"("userId","firstName", "lastName","username", "phone", "emailId", "password", "emailVerified", "createdOn")
+VALUES
+(default, _firstName,_lastName ,_username, _phone, _emailId, _password, _emailVerified, _createdOn);
+-- stored procedure body
+COMMIT;
+END; $$
+
+
+--call the procedure and pass parameter values
+CALL insertUser('John','Doe2','johndoe2','555-555-5555','johndoe2@email.com','password6',TRUE,'2022-02-22 12:00:00');
+
+--select statement on "User" table
+SELECT * FROM "User" 
+WHERE "emailId"= 'johndoe2@email.com';
+
+
+
+-- Create the view named "WeatherView"
+CREATE OR REPLACE VIEW "WeatherView" AS
+SELECT c."name", cn."countryCode", w."description", w."temp", w."feelsLike"
+,w."humidity", w."pressure", w."sunrise", w."sunset" ,w."updatedOn"
+FROM "City" AS c
+INNER JOIN "Country" AS cn 
+ON cn."countryId" = c."countryId"
+INNER JOIN "Weather" AS w 
+ON w."cityId" = c."cityId";
+
+-- Select all columns from the "WeatherView" view
+SELECT * FROM "WeatherView";
+
+
+--create the function totalRecordsInUser()
+CREATE OR REPLACE FUNCTION totalRecordsInUser()
+RETURNS INTEGER 
+language plpgsql
+AS $total$
+declare
+total INTEGER;
+begin
+SELECT COUNT(*) INTO total FROM "User";
+RETURN total;
+end; 
+$total$;
+
+
+
+
+-- To call this function and check the total records in the User table, run this statement:
+SELECT totalRecordsInUser();
+
+
+
+
+
+
+
+
+
+
+--Create the stored procedure 
+
+CREATE OR REPLACE PROCEDURE insertBulkUser()
+LANGUAGE plpgsql
+AS $$
+DECLARE 
+randomNumberStartLimit INTEGER=10000;
+randomNumberEndLimit INTEGER= 20000;
+randomNumberGenerated INTEGER;
+BEGIN
+FOR _index IN 1..50 LOOP
+randomNumberGenerated = floor(random() * (randomNumberStartLimit-randomNumberEndLimit + 1) + randomNumberEndLimit);
+INSERT INTO "User"("userId","firstName", "lastName","username", "phone", "emailId", "password",
+				   "emailVerified", "createdOn")
+VALUES
+(default, concat('username',_index),concat('username',_index) ,concat('username',_index), randomNumberGenerated ,
+ concat('username',_index,'@email.com'),concat('password',_index), FALSE, NOW());
+-- stored procedure body
+END LOOP;
+END; 
+$$;
+
+
+-- Let us call this procedure and do bulk insert
+CALL insertBulkUser();
+
+
+--SELECT operation on User table to verify the insertion
+SELECT * FROM "User";
+
+
+
+
+
+
+
+
+--select all users whose first name is 'John' and last name is 'Doe'.
+SELECT * FROM "User"
+WHERE "firstName" = 'John' AND "lastName" = 'Doe';
+
+--select all users whose email is not 'johndoe@example.com'.
+SELECT * FROM "User" 
+WHERE "emailId" != 'johndoe@example.com';
+ 
+-- select all users whose email is either 'johndoe@example.com' or 'janedoe@example.com'.
+ SELECT * FROM "User"
+WHERE ("emailId" = 'johndoe@example.com')
+OR ("emailId" = 'janedoe@example.com');
+
+--select all users whose phone number starts with '555'.
+ 
+SELECT * FROM "User"
+WHERE "phone" LIKE '555%';
+
+--select all users whose first name starts with 'A' or 'B' and whose email is verified.
+SELECT * FROM "User" 
+WHERE (("firstName" LIKE 'A%') OR ("firstName" LIKE 'B%')) 
+AND "emailVerified" = true;
+
+
+
+SELECT TO_CHAR(date_trunc('month',"createdOn"),'YYYY-MM') AS "month" ,COUNT("userId") AS "user_count"
+FROM "User"
+GROUP BY "month"
+ORDER BY "month" ASC;
+
+
+
+
+
+
+
+-- retrieve the first name, last name, phone number, and email ID of a user whose "userId" is  retrieved using subquery 
+
+--The subquery retrieves the user's "userId" for the user with the "username"='johndoe',which is used to filter the results in the outer query.
+
+
+SELECT "firstName", "lastName", "phone", "emailId"
+FROM "User"
+WHERE "userId" IN
+(SELECT "userId" 
+FROM "User"
+WHERE "username"='johndoe');
+
+
+
+--retrieves the first name, last name, username, phone number, and email ID of a user whose "userid" is retrieved using subquery   
+
+--This subquery is used to determine the maximum "userId" and then filters the results in the outer query using this value.
+SELECT "firstName", "lastName", "phone", "emailId"
+FROM "User"
+WHERE "userId" IN
+(SELECT MAX("userId") 
+FROM "User");
