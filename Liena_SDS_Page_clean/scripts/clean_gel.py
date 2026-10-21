@@ -26,6 +26,11 @@ from skimage.restoration import inpaint_biharmonic
 # Stain Free colormap: Cb ~ CB_RAMP*Y, Cr ~ CR_RAMP*Y, and Y = STAINFREE_MAX_Y
 # at full scale (fitted against the raw .scn scan of the 14 Oct gel)
 CB_RAMP, CR_RAMP, STAINFREE_MAX_Y = 0.533, -0.519, 146.0
+# Chroma above which a pixel's luma is taken as overlay. Tuned against the raw
+# scans of 23 Sep (grayscale) and 14 Oct (stain-free): lower values mask gel
+# luma under the JPEG chroma fringe (stained bands lose contrast), higher
+# values leave faint line edges.
+MASK_THR = 30
 
 
 def load_ycbcr(path):
@@ -78,12 +83,26 @@ def label_mask(y, left, right, y0, y1, stain_free):
         w = sl[1].stop - sl[1].start
         big_enough = (lab[sl] == i).sum() >= 4  # not JPEG noise
         if h <= 30 and w <= 60 and big_enough:  # overlapping labels merge
-            mask[max(sl[0].start - pad, 0):sl[0].stop + pad,
-                 max(sl[1].start - pad, 0):sl[1].stop + pad] = True
+            xa, xb = max(sl[1].start - pad, 0), sl[1].stop + pad
+            # ticks run onto the frame line: carry them across it
+            if xb >= left[0] - 1 and xa < left[0]:
+                xb = left[1] + 3
+            if xa <= right[1] + 1 and xb > right[1]:
+                xa = right[0] - 3
+            mask[max(sl[0].start - pad, 0):sl[0].stop + pad, xa:xb] = True
     return mask
 
 
-def clean(path, chroma_thr=14):
+def analyse(path, mask_thr=MASK_THR):
+    """Gel value in [0, 1], overlay mask and lane frame of a report image.
+
+    Band lines (magenta) cross stained bands, so only pixels whose chroma
+    exceeds mask_thr are masked: JPEG spreads the overlay's colour (4:2:0
+    chroma) further than its luma, and the luma of those fringe pixels is
+    still the gel's. On the stain-free ramp, thin blue lane/frame lines keep
+    too little excess chroma for that, so there blue is masked down to the
+    detection threshold.
+    """
     y, cb, cr = load_ycbcr(path)
     stain_free = is_stain_free(y, cb, cr)
     if stain_free:
@@ -91,24 +110,43 @@ def clean(path, chroma_thr=14):
         value = np.clip(y / STAINFREE_MAX_Y, 0, 1)
         saturated = ((cr > 50) & (cb < 0)) | (y > 165)  # red fill, white edge
         value[saturated] = 1.0
-        chroma_thr = 20
+        detect_thr = 20
     else:
         dcb, dcr = cb, cr
         value = y / 255.0
         saturated = np.zeros_like(y, bool)
+        detect_thr = 14
+    chroma = np.hypot(dcb, dcr)
 
-    colour = np.hypot(dcb, dcr) > chroma_thr
-    # blue overlay: excess Cb, no excess Cr; magenta/red have strong excess Cr
-    blue = colour & (dcb > 12) & (dcr < 4)
+    # blue overlay: excess Cb, little excess Cr (on the stain-free ramp a blue
+    # line's own luma shows as up to ~+8); magenta/red have excess Cr > 50
+    blue = (chroma > detect_thr) & (dcb > 12) & (dcr < 12)
     left, right, y0, y1 = frame_lines(blue)
 
-    mask = ndi.binary_dilation(colour, iterations=1)
+    mask = chroma > mask_thr
+    if stain_free:
+        mask |= blue
     mask |= label_mask(y, left, right, y0, y1, stain_free)
     mask &= ~saturated  # saturated pixels are known: full intensity
+    return value, mask, (left[0], y0, right[1], y1)
 
+
+def clean(path, **kw):
+    value, mask, frame = analyse(path, **kw)
     out = inpaint_biharmonic(value, mask)
-    frame = (left[0], y0, right[1], y1)
     return (np.clip(out, 0, 1) * 255).round().astype(np.uint8), mask, frame
+
+
+def clean_merged(paths, **kw):
+    """Clean several reports of the same scan (different lane/band analyses):
+    a pixel is only inpainted where every report's overlay covers it."""
+    values, masks, frames = zip(*(analyse(p, **kw) for p in paths))
+    known = ~np.array(masks)
+    count = known.sum(0)
+    value = (np.array(values) * known).sum(0) / np.maximum(count, 1)
+    mask = count == 0
+    out = inpaint_biharmonic(value, mask)
+    return (np.clip(out, 0, 1) * 255).round().astype(np.uint8), mask, frames[0]
 
 
 if __name__ == "__main__":

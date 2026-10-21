@@ -21,6 +21,11 @@ def part(blob, description):
 
 
 def render(path):
+    return (display(path) * 255).round().astype(np.uint8)
+
+
+def display(path):
+    """Displayed intensity in [0, 1] (float, full raw precision)."""
     blob = open(path, "rb").read()
     header = part(blob, b"ImageHeader").decode("utf8")
     width = int(re.search(r'<size_pix width="(\d+)"', header).group(1))
@@ -36,9 +41,7 @@ def render(path):
     invert = ('zero_is="white"' in header and not colormap) != ('invert="true"' in item)
 
     v = np.clip((raw.astype(float) - low) / (high - low), 0, 1) ** gamma
-    if invert:
-        v = 1 - v
-    return (v * 255).round().astype(np.uint8)
+    return 1 - v if invert else v
 
 
 if __name__ == "__main__":
